@@ -7,7 +7,11 @@ import android.widget.Button;
 
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.melyseev.foodrecipes.adapters.OnRecipeListener;
+import com.melyseev.foodrecipes.adapters.RecipeRecyclerAdapter;
 import com.melyseev.foodrecipes.models.Recipe;
 import com.melyseev.foodrecipes.requests.RecipeApi;
 import com.melyseev.foodrecipes.requests.ServiceGenerator;
@@ -22,27 +26,42 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class RecipeListActivity extends BaseActivity {
+public class RecipeListActivity extends BaseActivity implements OnRecipeListener {
 
     private static final String TAG = "RecipeListActivity";
     private RecipeListViewModel recipeListViewModel;
+    private RecyclerView recyclerView;
+    private RecipeRecyclerAdapter recipeRecyclerAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recipe_list);
 
+
         recipeListViewModel = new ViewModelProvider(this).get(RecipeListViewModel.class);
+
+        initLayoutAdapter();
         subscribeObservers();
+        testRetrofitRequest2();
 
-
-        Button button = findViewById(R.id.test);
+        //Button button = findViewById(R.id.test);
+        /*
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 testRetrofitRequest2();
             }
         });
+         */
 
+    }
+
+    private void initLayoutAdapter() {
+        recyclerView = findViewById(R.id.recyclerView);
+        recipeRecyclerAdapter = new RecipeRecyclerAdapter(this);
+        recyclerView.setAdapter(recipeRecyclerAdapter);
+        recyclerView.setLayoutManager( new LinearLayoutManager(this));
     }
 
     private void subscribeObservers(){
@@ -55,6 +74,7 @@ public class RecipeListActivity extends BaseActivity {
                 for(Recipe recipe: recipes){
                     Log.d(TAG, "onChanged: " + recipe.getTitle());
                 }
+                recipeRecyclerAdapter.setRecipeList(recipes);
             }
         });
     }
@@ -138,6 +158,16 @@ public class RecipeListActivity extends BaseActivity {
 
             }
         });
+
+    }
+
+    @Override
+    public void onRecipeClick(int position) {
+
+    }
+
+    @Override
+    public void onCategoryClick(String category) {
 
     }
 }
