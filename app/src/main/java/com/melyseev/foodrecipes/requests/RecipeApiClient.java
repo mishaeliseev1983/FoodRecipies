@@ -20,7 +20,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 public class RecipeApiClient {
-
+    private final String TAG = "RecipeApiClient";
     private static RecipeApiClient instance;
 
     private MutableLiveData<List<Recipe>> recipes;
@@ -42,17 +42,16 @@ public class RecipeApiClient {
     }
 
 
-    public void searchRecipes(String query, int pageNumber){
-        ScheduledExecutorService scheduledExecutorService= AppExecutors.getInstance().getScheduledExecutorService();
+    public void searchRecipes(String query, int pageNumber) {
+        ScheduledExecutorService scheduledExecutorService = AppExecutors.getInstance().getScheduledExecutorService();
 
-        if(retrieveSearchRecipesRunnable!=null)
-            retrieveSearchRecipesRunnable= null;
-        retrieveSearchRecipesRunnable= new RetrieveSearchRecipesRunnable(query, pageNumber);
+        if (retrieveSearchRecipesRunnable != null)
+            retrieveSearchRecipesRunnable = null;
+        retrieveSearchRecipesRunnable = new RetrieveSearchRecipesRunnable(query, pageNumber);
 
 
-        final Future handler=  scheduledExecutorService.submit(    retrieveSearchRecipesRunnable);
-
-        scheduledExecutorService.schedule(new Runnable() {
+        final Future handler = scheduledExecutorService.submit(retrieveSearchRecipesRunnable);
+/*        scheduledExecutorService.schedule(new Runnable() {
             @Override
             public void run() {
 
@@ -60,8 +59,18 @@ public class RecipeApiClient {
                 handler.cancel( true );
             }
         }, Constants.NETWORK_TIMEOUT, TimeUnit.MILLISECONDS);
+*/
     }
 
+
+    public void cancelRequest(){
+        if(retrieveSearchRecipesRunnable!=null){
+            retrieveSearchRecipesRunnable.cancelRequest();
+        }
+        else {
+            Log.e(TAG, " retrieveSearchRecipesRunnable is null");
+        }
+    }
 
 
     class RetrieveSearchRecipesRunnable implements Runnable{
@@ -69,7 +78,7 @@ public class RecipeApiClient {
         private final String TAG = "RetrieveSearchRecipes";
         String query;
         int pageNumber;
-        boolean cancelRequest=false;
+        boolean cancelRequest;
 
         RetrieveSearchRecipesRunnable(String query, int pageNumber){
             this.query= query;
@@ -83,13 +92,13 @@ public class RecipeApiClient {
 
         @Override
         public void run() {
-
             try {
                 Response response= getRecipes(query, pageNumber).execute();
+
                 if(cancelRequest==true)
                     return;
 
-                if(response.code() == 200){
+                if(response.isSuccessful()){
                     RecipeSearchResponse recipeSearchResponse = (RecipeSearchResponse) response.body();
                     List<Recipe> recipesFromResponse =  recipeSearchResponse.getRecipes();
                     if(pageNumber==1){
@@ -114,6 +123,11 @@ public class RecipeApiClient {
             }
 
 
+        }
+
+        public void cancelRequest() {
+            Log.e(TAG, " cancel request");
+            cancelRequest= true;
         }
     }
 }

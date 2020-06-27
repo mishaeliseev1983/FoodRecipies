@@ -2,9 +2,10 @@ package com.melyseev.foodrecipes;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -13,18 +14,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.melyseev.foodrecipes.adapters.OnRecipeListener;
 import com.melyseev.foodrecipes.adapters.RecipeRecyclerAdapter;
 import com.melyseev.foodrecipes.models.Recipe;
-import com.melyseev.foodrecipes.requests.RecipeApi;
-import com.melyseev.foodrecipes.requests.ServiceGenerator;
-import com.melyseev.foodrecipes.requests.responses.RecipeResponse;
-import com.melyseev.foodrecipes.requests.responses.RecipeSearchResponse;
+import com.melyseev.foodrecipes.util.VerticalSpacingItemDecorator;
 import com.melyseev.foodrecipes.viewmodels.RecipeListViewModel;
-
-import java.io.IOException;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class RecipeListActivity extends BaseActivity implements OnRecipeListener {
 
@@ -32,7 +25,7 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
     private RecipeListViewModel recipeListViewModel;
     private RecyclerView recyclerView;
     private RecipeRecyclerAdapter recipeRecyclerAdapter;
-
+    private SearchView searchView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,50 +33,93 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
 
 
         recipeListViewModel = new ViewModelProvider(this).get(RecipeListViewModel.class);
+        searchView= findViewById(R.id.search_view);
+        recyclerView = findViewById(R.id.recyclerView);
 
         initLayoutAdapter();
         subscribeObservers();
-        testRetrofitRequest2();
-
-        //Button button = findViewById(R.id.test);
-        /*
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                testRetrofitRequest2();
-            }
-        });
-         */
+        initSearchView();
+        recipeRecyclerAdapter.displaySearchCategories();
+        recipeListViewModel.setViewRecipes( false );
 
     }
 
+    private void initSearchView(){
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                recipeRecyclerAdapter.diplayLoading();
+                recipeListViewModel.searchRecipes(query, 1);
+                searchView.clearFocus();
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+    }
     private void initLayoutAdapter() {
-        recyclerView = findViewById(R.id.recyclerView);
         recipeRecyclerAdapter = new RecipeRecyclerAdapter(this);
         recyclerView.setAdapter(recipeRecyclerAdapter);
         recyclerView.setLayoutManager( new LinearLayoutManager(this));
+        VerticalSpacingItemDecorator verticalSpacingItemDecorator= new VerticalSpacingItemDecorator(10);
+        recyclerView.addItemDecoration( verticalSpacingItemDecorator );
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+
+                if(recyclerView.canScrollVertically(1) == false){
+                    //search the next page
+                    if( recipeListViewModel.isViewRecipes()==true && recipeListViewModel.isPerformingQuery()==false)
+                        recipeListViewModel.searchNextPage();
+                }
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+        });
     }
 
     private void subscribeObservers(){
         recipeListViewModel.getRecipes().observe(this, new Observer<List<Recipe>>() {
             @Override
             public void onChanged(List<Recipe> recipes) {
-
-                //recipes.stream().forEach(e->Log.d(TAG, e.getTitle()));
-
-                for(Recipe recipe: recipes){
-                    Log.d(TAG, "onChanged: " + recipe.getTitle());
+                if(recipes!=null) {
+                    if (recipeListViewModel.isViewRecipes()) {
+                        recipeListViewModel.setPerformingQuery(false);
+                        recipeRecyclerAdapter.setRecipeList(recipes);
+                    }
                 }
-                recipeRecyclerAdapter.setRecipeList(recipes);
             }
         });
     }
+
+
+    @Override
+    public void onBackPressed() {
+        Log.d(TAG, "onBackPressed");
+       /*
+        if(recipeListViewModel.isViewRecipes()== true && recipeListViewModel.isPerformingQuery())
+            recipeListViewModel.cancelRequest();
+        super.onBackPressed();
+
+        */
+
+
+       if(recipeListViewModel.onBackPressed()){
+           super.onBackPressed();
+       }else
+           recipeRecyclerAdapter.displaySearchCategories();
+    }
+
+
 
     private void testRetrofitRequest2(){
         recipeListViewModel.searchRecipes("chicken", 1);
     }
 
-
+/*
         private void testRetrofitRequest(){
         RecipeApi recipeApi = ServiceGenerator.getRecipeApi();
 
@@ -158,8 +194,8 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
 
             }
         });
-
     }
+     */
 
     @Override
     public void onRecipeClick(int position) {
@@ -168,6 +204,8 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
 
     @Override
     public void onCategoryClick(String category) {
-
+        recipeRecyclerAdapter.diplayLoading();
+        recipeListViewModel.searchRecipes( category, 1);
+        searchView.clearFocus();
     }
 }
