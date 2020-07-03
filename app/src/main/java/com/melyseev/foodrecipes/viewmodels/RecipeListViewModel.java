@@ -27,7 +27,10 @@ public class RecipeListViewModel extends ViewModel {
     }
 
     public void searchNextPage(){
-        recipeRepository.searchNextPage();
+        if(isPerformingQuery==false && isViewRecipes==true) {
+            setPerformingQuery( true );
+            recipeRepository.searchNextPage();
+        }
     }
 
     public void cancelRequest(){

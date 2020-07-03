@@ -1,7 +1,6 @@
 package com.melyseev.foodrecipes.repositories;
 
 import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
 
 import com.melyseev.foodrecipes.models.Recipe;
 import com.melyseev.foodrecipes.requests.RecipeApiClient;

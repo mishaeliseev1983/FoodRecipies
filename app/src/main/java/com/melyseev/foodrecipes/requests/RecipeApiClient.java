@@ -11,6 +11,7 @@ import com.melyseev.foodrecipes.requests.responses.RecipeSearchResponse;
 import com.melyseev.foodrecipes.util.Constants;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -21,6 +22,7 @@ import retrofit2.Response;
 
 public class RecipeApiClient {
     private final String TAG = "RecipeApiClient";
+    private final static int SIZE_PORTION_DATA=30;
     private static RecipeApiClient instance;
 
     private MutableLiveData<List<Recipe>> recipes;
@@ -98,25 +100,32 @@ public class RecipeApiClient {
                 if(cancelRequest==true)
                     return;
 
-                if(response.isSuccessful()){
-                    RecipeSearchResponse recipeSearchResponse = (RecipeSearchResponse) response.body();
-                    List<Recipe> recipesFromResponse =  recipeSearchResponse.getRecipes();
-                    if(pageNumber==1){
-                        recipes.postValue(recipesFromResponse);
+                if(response.code() == 200){
+                    Recipe loadRecipe= new Recipe();
+                    loadRecipe.setTitle("LOAD");
+
+                    List<Recipe> list = new ArrayList<>(((RecipeSearchResponse)response.body()).getRecipes());
+                    if((list.size() == SIZE_PORTION_DATA)) list.add(loadRecipe);
+                    if(pageNumber == 1){
+                        recipes.postValue(list);
                     }
                     else{
-                        String errorBody = response.errorBody().toString();
-
-
-                        Log.e(TAG, "run: "+ errorBody);
-                        recipes.getValue().addAll(recipesFromResponse);
+                        List<Recipe> currentRecipes = recipes.getValue();
+                        if(currentRecipes.size()>=SIZE_PORTION_DATA && currentRecipes.get(currentRecipes.size()-1).getTitle().equals("LOAD")){
+                            currentRecipes.remove(currentRecipes.size()-1);
+                        }
+                        currentRecipes.addAll(list);
+                        recipes.postValue(currentRecipes);
                     }
-
-
-                }else{
-
-                     recipes.postValue( null );
                 }
+                else{
+                    String error = response.errorBody().string();
+                    Log.e(TAG, "run: error: " + error);
+                    recipes.postValue(null);
+                }
+
+
+
             } catch (IOException e) {
                 e.printStackTrace();
                 recipes.postValue( null );

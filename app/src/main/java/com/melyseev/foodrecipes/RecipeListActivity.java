@@ -1,11 +1,15 @@
 package com.melyseev.foodrecipes;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -42,6 +46,8 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
         recipeRecyclerAdapter.displaySearchCategories();
         recipeListViewModel.setViewRecipes( false );
 
+        Toolbar toolbar= findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
     }
 
     private void initSearchView(){
@@ -73,8 +79,8 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
 
                 if(recyclerView.canScrollVertically(1) == false){
                     //search the next page
-                    if( recipeListViewModel.isViewRecipes()==true && recipeListViewModel.isPerformingQuery()==false)
-                        recipeListViewModel.searchNextPage();
+                    Log.e(TAG, "I reached bottom");
+                    recipeListViewModel.searchNextPage();
                 }
                 super.onScrollStateChanged(recyclerView, newState);
             }
@@ -89,6 +95,7 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
                     if (recipeListViewModel.isViewRecipes()) {
                         recipeListViewModel.setPerformingQuery(false);
                         recipeRecyclerAdapter.setRecipeList(recipes);
+                        Log.e(TAG, "size new recipes: " + recipes.size());
                     }
                 }
             }
@@ -98,15 +105,7 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
 
     @Override
     public void onBackPressed() {
-        Log.d(TAG, "onBackPressed");
-       /*
-        if(recipeListViewModel.isViewRecipes()== true && recipeListViewModel.isPerformingQuery())
-            recipeListViewModel.cancelRequest();
-        super.onBackPressed();
-
-        */
-
-
+       Log.d(TAG, "onBackPressed");
        if(recipeListViewModel.onBackPressed()){
            super.onBackPressed();
        }else
@@ -199,7 +198,10 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
 
     @Override
     public void onRecipeClick(int position) {
-
+          Recipe recipe= recipeRecyclerAdapter.getRecipeByPosition(position);
+          Intent intentRecipe= new Intent(this, RecipeActivity.class);
+          intentRecipe.putExtra("recipe", recipe);
+          startActivity( intentRecipe );
     }
 
     @Override
@@ -207,5 +209,19 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
         recipeRecyclerAdapter.diplayLoading();
         recipeListViewModel.searchRecipes( category, 1);
         searchView.clearFocus();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if(item.getItemId() == R.id.action_categories){
+            recipeRecyclerAdapter.displaySearchCategories();
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.recipe_search_menu, menu);
+        return super.onCreateOptionsMenu(menu);
     }
 }

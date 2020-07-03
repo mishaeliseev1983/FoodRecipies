@@ -37,7 +37,6 @@ public class RecipeRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             Recipe loadRecipe= new Recipe();
             loadRecipe.setTitle("LOAD");
             loadingRecipe.add(loadRecipe);
-
             recipeList= loadingRecipe;
             notifyDataSetChanged();
         }
@@ -68,8 +67,8 @@ public class RecipeRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vie
 
     @Override
     public int getItemViewType(int position) {
-        if(isLoading())
-            return  LOADING_TYPE;
+        if(recipeList.get(position).getTitle().equals("LOAD"))
+            return LOADING_TYPE;
         else if(recipeList.get(position).getSocial_rank() == -1) {
             return CATEGORY_TYPE;
         }
@@ -143,5 +142,12 @@ public class RecipeRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vie
     public void setRecipeList(List<Recipe> list){
         recipeList= list;
         notifyDataSetChanged();
+    }
+
+    public Recipe getRecipeByPosition(int position){
+        if(recipeList!=null && recipeList.size()>0 ){
+            return recipeList.get( position );
+        }
+        return null;
     }
 }
